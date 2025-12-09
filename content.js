@@ -31,7 +31,7 @@ async function processAiAssist(headerConfig) {
   
   await DebugLogger.log('AI_PROCESS', 'Configuration loaded successfully', config);
   
-  const context = await collectContext();
+  const context = collectContext();
   await DebugLogger.log('AI_PROCESS', 'Context collected', context);
   
   const requestData = {
@@ -83,7 +83,7 @@ async function getConfiguration(headerConfig) {
   return config;
 }
 
-async function collectContext() {
+function collectContext() {
   const contextElements = document.querySelectorAll('[data-ai-context]');
   const context = {
     title: document.title,
@@ -104,38 +104,6 @@ async function collectContext() {
     
     DebugLogger.log('CONTEXT', `Context block "${label}": ${content.substring(0, 100)}${content.length > 100 ? '...' : ''}`);
   });
-
-  const previewIframe = document.querySelector('#preview-container iframe');
-  if (previewIframe?.src) {
-    try {
-      const previewUrl = new URL(previewIframe.src, window.location.href).href;
-      DebugLogger.log('CONTEXT', 'Preview iframe detected', { previewUrl });
-
-      if (previewUrl.includes('.pre')) {
-        const response = await fetch(previewUrl, { credentials: 'include' });
-        if (!response.ok) {
-          throw new Error(`Preview fetch failed with status ${response.status}`);
-        }
-
-        const previewText = await response.text();
-        const truncatedPreview = previewText.slice(0, 8000);
-        context.contextBlocks.push({
-          label: 'preview-container',
-          content: truncatedPreview
-        });
-
-        context.previewUrl = previewUrl;
-        context.previewContentLength = previewText.length;
-
-        DebugLogger.log('CONTEXT', 'Preview content captured', {
-          previewUrl,
-          capturedLength: truncatedPreview.length
-        });
-      }
-    } catch (error) {
-      DebugLogger.warn('CONTEXT', 'Failed to capture preview content', error);
-    }
-  }
   
   return context;
 }
@@ -174,19 +142,7 @@ function inferTargets() {
 }
 
 function fillFields(targets, aiData) {
-  const normalizedData = { ...(aiData || {}) };
-
-  if (targets?.some(target => target.name === 'preview-toggle')) {
-    normalizedData['preview-toggle'] = true;
-    DebugLogger.log('FIELD_FILLING', 'preview-toggle enforced to true');
-  }
-
-  if (targets?.some(target => target.name === 'device-toggle')) {
-    normalizedData['device-toggle'] = false;
-    DebugLogger.log('FIELD_FILLING', 'device-toggle enforced to false');
-  }
-
-  DebugLogger.log('FIELD_FILLING', 'Starting to fill fields', { targets, aiData: normalizedData });
+  DebugLogger.log('FIELD_FILLING', 'Starting to fill fields', { targets, aiData });
   
   targets.forEach(target => {
     const element = document.querySelector(target.selector);
@@ -195,7 +151,7 @@ function fillFields(targets, aiData) {
       return;
     }
     
-    const value = normalizedData[target.name];
+    const value = aiData[target.name];
     if (value === undefined) {
       DebugLogger.warn('FIELD_FILLING', `No AI data for target: ${target.name}`);
       return;

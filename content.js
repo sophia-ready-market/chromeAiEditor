@@ -23,6 +23,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function processAiAssist(headerConfig) {
   await DebugLogger.log('AI_PROCESS', 'Starting AI assist processing');
   
+  // Check if preview container with openEditor class exists
+  const previewContainer = document.getElementById('preview-container');
+  if (previewContainer && previewContainer.classList.contains('openEditor')) {
+    await DebugLogger.log('AI_PROCESS', 'Preview container with openEditor class detected, skipping form modification');
+    return;
+  }
+  
   const config = await getConfiguration(headerConfig);
   if (!config || !config.targets) {
     await DebugLogger.warn('AI_PROCESS', 'No valid AI configuration found');
